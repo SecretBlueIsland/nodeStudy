@@ -27,7 +27,7 @@ server.on('connection', (client, request)=>{
 		try {
 			clients[~groupid + 2].get(openid).send(msg)
 			clients[~groupid + 2].get('debug').send(msg)
-		} finally {}
+		} catch(e) {}
 	})
 	client.on('close', ()=>{
 		clients[groupid].delete(openid)
