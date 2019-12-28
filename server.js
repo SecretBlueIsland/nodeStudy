@@ -2,39 +2,36 @@ console.log("启动服务器")
 var WebSocketServer = require('ws').Server,
 	server = new WebSocketServer({port:8010}),
 	qs = require('qs'),
-	clients = [new Array, new Array]
-var Client = (function () {
-    function Client(client, openid) {
-        this.client = client;
-        this.openid = openid;
-    }
-    return Client;
-}());
-console.log(clients)
+	clients = [new Map(), new Map()]
+
+function show() {
+	clients.forEach((g,i)=>{
+		if (i == 0)
+			console.log('微信端：')
+		else if (i == 1)
+			console.log('网页端：')
+
+		g.forEach((v,k)=>console.log(k))
+	})
+	console.log('')
+}
+
 server.on('connection', (client, request)=>{
 	let params = qs.parse(request.url.split('?',2)[1])
 	let groupid = params.groupid
 	let openid = params.openid
-	clients[groupid].push(new Client(client, openid))		
-	console.log(clients)
+	clients[groupid].set(openid, client)
+	show()
 	client.on('message', msg=>{
-		let s = clients[~groupid + 2]
-		for (let i in s) {
-			if (s[i].openid == openid) {
-				s[i].client.send(msg)
-				break
-			}
-		}
+		//console.log('groupid=' + groupid + ',openid' + openid + ',msg=' + msg)
+		try {
+			clients[~groupid + 2].get(openid).send(msg)
+			clients[~groupid + 2].get('debug').send(msg)
+		} finally {}
 	})
 	client.on('close', ()=>{
-		let s = clients[groupid]
-		for (let i in s) {
-			if (s[i].openid == openid) {
-				s.splice(i, 1)
-				break
-			}
-		}	
-		console.log(clients)
+		clients[groupid].delete(openid)
+		show()
 	})
 	client.on('error', e=>console.log(e))
 })
